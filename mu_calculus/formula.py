@@ -1,6 +1,7 @@
 import abc
 from typing import List
 
+
 class Formula(abc.ABC):
 
     def accept_visitor(self, visitor, pre_order: bool = True):
@@ -9,7 +10,7 @@ class Formula(abc.ABC):
 
 class Top(abc.ABC):
 
-    def __str__():
+    def __str__(self):
         return 'T'
 
     def accept_visitor(self, visitor, pre_order: bool = True):
@@ -24,7 +25,7 @@ class Top(abc.ABC):
 
 class Bottom(abc.ABC):
 
-    def __str__():
+    def __str__(self):
         return 'B'
 
     def accept_visitor(self, visitor, pre_order: bool = True):
@@ -37,7 +38,29 @@ class Bottom(abc.ABC):
         return hash('bot')
 
 
-class PropositionalVariable(Formula):
+class AP(Formula):
+
+    def __init__(self, name: str):
+        self._name = name
+
+    def __str__(self):
+        return self.name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return isinstance(other, AP) and other.name == self.name
+
+    @property
+    def name(self):
+        return self._name
+
+    def accept_visitor(self, visitor, pre_order: bool = True):
+        visitor.visit_ap(self)
+
+
+class Variable(Formula):
 
     def __init__(self, name: str, is_negated: bool = False):
         self._name = name
@@ -57,10 +80,11 @@ class PropositionalVariable(Formula):
         return self.name
 
     def accept_visitor(self, visitor, pre_order: bool = True):
-        return visitor.visit_propositional_variable(self)
+        return visitor.visit_variable(self)
 
     def __eq__(self, other):
-        return isinstance(other, PropositionalVariable) and other.name == self.name and other.is_negated == self.is_negated
+        return isinstance(other,
+                          Variable) and other.name == self.name and other.is_negated == self.is_negated
 
     def __hash__(self):
         return hash(self.name) + hash(self.is_negated)
@@ -99,7 +123,7 @@ class Conjunction(Formula):
         self._formulae = formulae
 
     def __str__(self):
-        return ' ∧ '.join(map(lambda f: f'{f}', self._formulae))
+        return ' ∧ '.join(map(lambda f: f'{f}' if isinstance(f, (AP, Variable)) else f"({f})", self._formulae))
 
     def accept_visitor(self, visitor, pre_order: bool = True):
         if pre_order:
@@ -128,7 +152,7 @@ class Disjunction(Formula):
         self._formulae = formulae
 
     def __str__(self):
-        return ' ∨ '.join(map(lambda f: f'{f}', self._formulae))
+        return ' ∨ '.join(map(lambda f: f'{f}' if isinstance(f, (AP, Variable)) else f"({f})", self._formulae))
 
     def accept_visitor(self, visitor, pre_order: bool = True):
         if pre_order:
@@ -137,7 +161,7 @@ class Disjunction(Formula):
                 formula.accept_visitor(visitor, pre_order=pre_order)
         else:
             for formula in self._formulae:
-                formula.accept_visitor(visitor, pre_order=pre_order)     
+                formula.accept_visitor(visitor, pre_order=pre_order)
             visitor.visit_disjunction(self)
 
     @property
@@ -186,6 +210,10 @@ class Diamond(Formula):
     def __str__(self):
         return f'♢{self._formula}'
 
+    @property
+    def formula(self):
+        return self._formula
+
     def accept_visitor(self, visitor, pre_order: bool = True):
         if pre_order:
             visitor.visit_diamond(self)
@@ -203,12 +231,12 @@ class Diamond(Formula):
 
 class Lfp(Formula):
 
-    def __init__(self, variable: PropositionalVariable, formula: Formula):
+    def __init__(self, variable: Variable, formula: Formula):
         self._variable = variable
         self._formula = formula
 
     def __str__(self):
-        return f'μ {self._variable}.({self._formula})'
+        return f'lfp {self._variable}.({self._formula})'
 
     def accept_visitor(self, visitor, pre_order: bool = True):
         if pre_order:
@@ -235,14 +263,14 @@ class Lfp(Formula):
 
 class Gfp(Formula):
 
-    def __init__(self, variable: PropositionalVariable, formula: Formula):
+    def __init__(self, variable: Variable, formula: Formula):
         self._variable = variable
         self._formula = formula
 
     def __str__(self):
-        return f'ν {self._variable}.({self._formula})'
+        return f'gfp {self._variable}.({self._formula})'
 
-    def accept_visitor(self, visitor):
+    def accept_visitor(self, visitor, pre_order: bool = True):
         if pre_order:
             visitor.visit_gfp(self)
             self._formula.accept_visitor(visitor)

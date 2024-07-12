@@ -1,5 +1,5 @@
 import abc
-from mu_calculus.formula import PropositionalVariable, Negation, Conjunction, Disjunction, Box, Diamond, Lfp, Gfp, Top, Bottom, Formula
+from mu_calculus.formula import Variable, Negation, Conjunction, Disjunction, Box, Diamond, Lfp, Gfp, Top, Bottom, Formula
 
 class FormulaVisitor(abc.ABC):
 
@@ -12,7 +12,11 @@ class FormulaVisitor(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def visit_propositional_variable(self, variable: PropositionalVariable):
+    def visit_ap(self):
+        pass
+
+    @abc.abstractmethod
+    def visit_variable(self, variable: Variable):
         pass
 
     @abc.abstractmethod
@@ -55,7 +59,10 @@ class SubformulaeCollector(FormulaVisitor):
     def visit_top(self):
         self._subformulae.add(Top())
 
-    def visit_propositional_variable(self, variable: PropositionalVariable):
+    def visit_ap(self):
+        self._subformulae.add(self)
+
+    def visit_variable(self, variable: Variable):
         self._subformulae.add(variable)
 
     def visit_negation(self, negation: Negation):
